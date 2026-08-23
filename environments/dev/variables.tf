@@ -54,6 +54,6 @@ variable "enable_eks" {
 variable "eks_version" {
   description = "Versão do Kubernetes usada pelo EKS."
   type        = string
-  default     = "1.30"
+  default     = "1.31"
 }
 
