@@ -22,8 +22,8 @@ Os workflows são executados manualmente em **Actions > Run workflow**.
 
 Para criar a infraestrutura:
 
-1. Execute `Terraform Bootstrap` com a ação `plan` ou `plan/apply`.
-2. Execute `Terraform CI/CD` com `plan` ou `plan/apply`.
+1. Execute `Terraform Bootstrap` para criação do S3.
+2. Execute `Terraform CI/CD` para criação do EC2 e EKS (principalmente).
 
 Use `plan` para apenas validar e planejar. Use `plan/apply` para aplicar os recursos.
 
