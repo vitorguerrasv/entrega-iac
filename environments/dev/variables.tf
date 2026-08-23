@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Nome curto do projeto."
   type        = string
-  default     = "acme"
+  default     = "entrega-iac"
 }
 
 variable "environment" {
@@ -45,14 +45,15 @@ variable "allowed_http_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "enable_ecs" {
-  description = "Ativa o bônus de cluster ECS/Fargate."
+variable "enable_eks" {
+  description = "Ativa o bônus de cluster EKS/Kubernetes."
   type        = bool
-  default     = false
+  default     = true
 }
 
-variable "ecs_container_image" {
-  description = "Imagem inicial do container ECS."
+variable "eks_version" {
+  description = "Versão do Kubernetes usada pelo EKS."
   type        = string
-  default     = "nginx:alpine"
+  default     = "1.31"
 }
+

@@ -37,3 +37,87 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', inputs.usuario)] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', inputs.usuario)] }}
+          aws-session-token: ${{ secrets[format('AWS_SESSION_TOKEN_{0}', inputs.usuario)] }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: bootstrap
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: bootstrap
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan
+        working-directory: bootstrap
+
+      - name: Terraform Apply
+        if: inputs.action == 'plan/apply'
+        run: terraform apply -input=false -auto-approve tfplan
+        working-directory: bootstrap
+
+  destroy:
+    if: inputs.action == 'plan/apply'
+    needs: bootstrap
+    runs-on: ubuntu-latest
+    environment: DESTROY
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', inputs.usuario)] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', inputs.usuario)] }}
+          aws-session-token: ${{ secrets[format('AWS_SESSION_TOKEN_{0}', inputs.usuario)] }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+
+      - name: Get state bucket name
+        run: echo "STATE_BUCKET=entrega-iac-terraform-state-$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: bootstrap
+
+      - name: Import bootstrap resources
+        run: |
+          terraform import -input=false aws_s3_bucket.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_versioning.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_server_side_encryption_configuration.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_public_access_block.state "$STATE_BUCKET"
+        working-directory: bootstrap
+
+      - name: Empty state bucket
+        run: |
+          while true; do
+            objects=$(aws s3api list-object-versions --bucket "$STATE_BUCKET" | jq -c '[.Versions[]?, .DeleteMarkers[]?] | map({Key, VersionId})')
+            if [[ "$objects" == "[]" ]]; then
+              break
+            fi
+            aws s3api delete-objects \
+              --bucket "$STATE_BUCKET" \
+              --delete "{\"Objects\":$objects,\"Quiet\":true}"
+          done
+
+      - name: Bootstrap Destroy
+        run: terraform destroy -input=false -auto-approve
+        working-directory: bootstrap

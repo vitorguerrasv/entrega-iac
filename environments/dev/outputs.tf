@@ -18,12 +18,12 @@ output "secret_arn" {
   value       = module.secrets.secret_arn
 }
 
-output "ecs_alb_url" {
-  description = "URL do ALB do ECS quando habilitado."
-  value       = var.enable_ecs ? "http://${module.ecs[0].alb_dns_name}" : null
+output "eks_cluster_name" {
+  description = "Nome do cluster EKS quando habilitado."
+  value       = var.enable_eks ? module.eks[0].cluster_name : null
 }
 
-output "ecr_repository_url" {
-  description = "Repositório ECR quando o ECS está habilitado."
-  value       = var.enable_ecs ? module.ecs[0].ecr_repository_url : null
+output "eks_cluster_endpoint" {
+  description = "Endpoint do cluster EKS quando habilitado."
+  value       = var.enable_eks ? module.eks[0].cluster_endpoint : null
 }
