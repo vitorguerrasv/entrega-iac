@@ -48,7 +48,7 @@ variable "allowed_http_cidrs" {
 variable "enable_eks" {
   description = "Ativa o bônus de cluster EKS/Kubernetes."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "eks_version" {
