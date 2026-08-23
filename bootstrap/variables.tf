@@ -4,13 +4,5 @@ variable "aws_region" {
 }
 variable "project_name" {
   type    = string
-  default = "acme"
-}
-variable "github_org" {
-  description = "vitorguerrasv"
-  type        = string
-}
-variable "github_repository" {
-  description = "entrega-iac"
-  type        = string
+  default = "entrega-iac"
 }
