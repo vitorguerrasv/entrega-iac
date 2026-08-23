@@ -1,4 +1,4 @@
-name: Terraform CI/CD
+name: Terraform Bootstrap
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
           - IGOR
           - LEONARDO
       action:
-        description: "Ação do Terraform"
+        description: "Ação do bootstrap"
         required: true
         type: choice
         options:
@@ -26,16 +26,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: terraform-dev-${{ inputs.usuario }}
+  group: terraform-bootstrap-${{ inputs.usuario }}
   cancel-in-progress: false
 
 jobs:
-  terraform:
+  bootstrap:
     if: inputs.action == 'plan' || inputs.action == 'plan/apply'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: environments/dev
 
     steps:
       - name: Checkout
@@ -54,38 +51,28 @@ jobs:
         with:
           terraform_version: "1.10.5"
 
-      - name: Get state bucket name
-        run: echo "STATE_BUCKET=entrega-iac-terraform-state-$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
-
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="bucket=$STATE_BUCKET" \
-            -backend-config="key=entrega-iac/dev/terraform.tfstate" \
-            -backend-config="region=us-east-1" \
-            -backend-config="encrypt=true" \
-            -backend-config="use_lockfile=true"
-
-      - name: Terraform Format
-        run: terraform fmt -check -recursive ../..
+        run: terraform init
+        working-directory: bootstrap
 
       - name: Terraform Validate
         run: terraform validate
+        working-directory: bootstrap
 
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan
+        working-directory: bootstrap
 
       - name: Terraform Apply
         if: inputs.action == 'plan/apply'
         run: terraform apply -input=false -auto-approve tfplan
+        working-directory: bootstrap
 
   destroy:
     if: inputs.action == 'plan/apply'
+    needs: bootstrap
     runs-on: ubuntu-latest
     environment: DESTROY
-    defaults:
-      run:
-        working-directory: environments/dev
 
     steps:
       - name: Checkout
@@ -108,13 +95,29 @@ jobs:
         run: echo "STATE_BUCKET=entrega-iac-terraform-state-$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_ENV"
 
       - name: Terraform Init
-        run: |
-          terraform init \
-            -backend-config="bucket=$STATE_BUCKET" \
-            -backend-config="key=entrega-iac/dev/terraform.tfstate" \
-            -backend-config="region=us-east-1" \
-            -backend-config="encrypt=true" \
-            -backend-config="use_lockfile=true"
+        run: terraform init
+        working-directory: bootstrap
 
-      - name: Terraform Destroy
+      - name: Import bootstrap resources
+        run: |
+          terraform import -input=false aws_s3_bucket.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_versioning.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_server_side_encryption_configuration.state "$STATE_BUCKET"
+          terraform import -input=false aws_s3_bucket_public_access_block.state "$STATE_BUCKET"
+        working-directory: bootstrap
+
+      - name: Empty state bucket
+        run: |
+          while true; do
+            objects=$(aws s3api list-object-versions --bucket "$STATE_BUCKET" | jq -c '[.Versions[]?, .DeleteMarkers[]?] | map({Key, VersionId})')
+            if [[ "$objects" == "[]" ]]; then
+              break
+            fi
+            aws s3api delete-objects \
+              --bucket "$STATE_BUCKET" \
+              --delete "{\"Objects\":$objects,\"Quiet\":true}"
+          done
+
+      - name: Bootstrap Destroy
         run: terraform destroy -input=false -auto-approve
+        working-directory: bootstrap
