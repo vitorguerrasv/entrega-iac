@@ -1,0 +1,39 @@
+name: Terraform Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      usuario:
+        description: "Usuário da AWS Academy"
+        required: true
+        type: choice
+        options:
+          - VITOR
+          - KEZIA
+          - ERICA
+          - IGOR
+          - LEONARDO
+      action:
+        description: "Ação do bootstrap"
+        required: true
+        type: choice
+        options:
+          - plan
+          - plan/apply
+        default: plan
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-bootstrap-${{ inputs.usuario }}
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: inputs.action == 'plan' || inputs.action == 'plan/apply'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
