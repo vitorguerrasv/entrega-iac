@@ -7,10 +7,10 @@ variable "project_name" {
   default = "acme"
 }
 variable "github_org" {
-  description = "Organização ou usuário do GitHub."
+  description = "vitorguerrasv"
   type        = string
 }
 variable "github_repository" {
-  description = "Nome do repositório GitHub."
+  description = "entrega-iac"
   type        = string
 }
