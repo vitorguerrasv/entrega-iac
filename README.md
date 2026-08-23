@@ -27,12 +27,16 @@ Para criar a infraestrutura:
 
 Use `plan` para apenas validar e planejar. Use `plan/apply` para aplicar os recursos.
 
-Para teste de provisionamento e exclusão, sigam os passos abaixo:
+## Para teste de provisionamento e exclusão, sigam os passos abaixo:
 
-1. Primeiro destrua a infraestrutura (Terraform CI/CD):
+1. Primeiro execute o workflow do Bootstrap (Terraform Bootstrap) com a opção plan/apply.
+
+2. Depois execute o workflow CI/CD (Terraform CI/CD) com a opção plan/apply.
+
+3. Quando finalizar, primeiro destrua a infraestrutura (Terraform CI/CD):
 Quando a ação for `plan/apply`, o job `destroy` será habilitado após o apply e aguardará aprovação no environment `DESTROY`.
 Após a aprovação, o workflow do environment destrói o ambiente `dev`.
 
-2. Em seguida, o workflow do Bootstrap (Terraform Bootstrap):
+4. Em seguida, destrua o S3 com o workflow do Bootstrap (Terraform Bootstrap):
 Quando a ação for `plan/apply`, o job `destroy` será habilitado após o apply e aguardará aprovação no environment `DESTROY`.
 Após a aprovação, o workflow do environment destrói o S3.
