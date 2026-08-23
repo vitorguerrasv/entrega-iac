@@ -40,14 +40,11 @@ module "ec2" {
   secret_arn        = module.secrets.secret_arn
 }
 
-module "ecs" {
-  count  = var.enable_ecs ? 1 : 0
-  source = "../../modules/ecs"
+module "eks" {
+  count  = var.enable_eks ? 1 : 0
+  source = "../../modules/eks"
 
-  name              = local.name
-  vpc_id            = module.network.vpc_id
-  public_subnet_ids = module.network.public_subnet_ids
-  alb_security_group_id = module.network.alb_security_group_id
-  ecs_security_group_id = module.network.ecs_security_group_id
-  container_image   = var.ecs_container_image
+  cluster_name = "${local.name}-cluster"
+  subnet_ids   = module.network.public_subnet_ids
+  eks_version  = var.eks_version
 }

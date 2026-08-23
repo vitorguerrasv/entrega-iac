@@ -13,49 +13,12 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-resource "aws_iam_role" "this" {
-  name = "${var.name}-ec2-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ssm" {
-  role       = aws_iam_role.this.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-
-resource "aws_iam_role_policy" "secret_read" {
-  name = "read-application-secret"
-  role = aws_iam_role.this.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
-      Resource = var.secret_arn
-    }]
-  })
-}
-
-resource "aws_iam_instance_profile" "this" {
-  name = "${var.name}-instance-profile"
-  role = aws_iam_role.this.name
-}
-
 resource "aws_instance" "this" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
-  iam_instance_profile        = aws_iam_instance_profile.this.name
+  iam_instance_profile        = "LabInstanceProfile"
   associate_public_ip_address = true
 
   metadata_options {
@@ -77,9 +40,9 @@ resource "aws_instance" "this" {
     cat > /usr/share/nginx/html/index.html <<'HTML'
     <!doctype html>
     <html lang="pt-BR">
-      <head><meta charset="utf-8"><title>ACME IaC</title></head>
+      <head><meta charset="utf-8"><title>Entrega do trabalho de IAC</title></head>
       <body>
-        <h1>ACME.com na AWS</h1>
+        <h1>Utilização da AWS Academy</h1>
         <p>Instância EC2 provisionada com Terraform.</p>
       </body>
     </html>
